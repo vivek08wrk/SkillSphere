@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { courseAPI } from '../../../lib/api';
-import { useAuth } from '../../../context/AuthContext';
+import { courseAPI } from '../../../../lib/api';
+import { useAuth } from '../../../../context/AuthContext';
 
 export default function EditCoursePage() {
   const { id } = useParams();
