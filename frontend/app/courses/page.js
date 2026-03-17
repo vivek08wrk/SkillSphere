@@ -20,7 +20,7 @@ export default function CoursesPage() {
       const response = await courseAPI.getAll();
       setCourses(response.data.courses);
     } catch (err) {
-      setError('Courses load nahi hue');
+      setError('Failed to load courses. Please try again.');
     } finally {
       setLoading(false);
     }
