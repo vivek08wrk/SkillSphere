@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// WHY same User model Auth mein bhi hai?
+// Microservices mein har service ka apna schema hota hai
+// User Service ko sirf profile fields chahiye
+// Auth Service ko sirf auth fields chahiye
+// Dono same DB use kar rahe hain but apne scope ke hisaab se
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  
+  // Profile fields — Auth Service mein nahi the
+  // WHY: Auth ka kaam sirf authenticate karna hai
+  // Profile data User Service handle karega
+  firstName String?  // ? = optional field
+  lastName  String?
+  bio       String?
+  avatar    String?  // Image URL store karenge
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}

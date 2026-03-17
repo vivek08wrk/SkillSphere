@@ -1,0 +1,160 @@
+version: '3.8'
+
+networks:
+  skillsphere-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: skillsphere_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_DB: skillsphere
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - skillsphere-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d skillsphere"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: skillsphere_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - skillsphere-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth:
+    build: ./services/auth
+    container_name: skillsphere_auth
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=auth
+      - JWT_SECRET=supersecretkey_change_in_prod
+      - JWT_REFRESH_SECRET=refreshsecretkey_change_in_prod
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skillsphere-network
+
+  user:
+    build: ./services/user
+    container_name: skillsphere_user
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=users
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skillsphere-network
+
+  course:
+    build: ./services/course
+    container_name: skillsphere_course
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=course
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skillsphere-network
+
+  payment:
+    build: ./services/payment
+    container_name: skillsphere_payment
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=payment
+      - REDIS_URL=redis://redis:6379
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - skillsphere-network
+
+  notification:
+    build: ./services/notification
+    container_name: skillsphere_notification
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - REDIS_URL=redis://redis:6379
+       
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}    
+     
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - skillsphere-network
+
+  gateway:
+    build: ./gateway
+    container_name: skillsphere_gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth:3001
+      - USER_SERVICE_URL=http://user:3002
+      - COURSE_SERVICE_URL=http://course:3003
+      - PAYMENT_SERVICE_URL=http://payment:3004
+      - JWT_SECRET=supersecretkey_change_in_prod
+    depends_on:
+      - auth
+      - user
+      - course
+      - payment
+      - notification
+    networks:
+      - skillsphere-network
+
+
+     
