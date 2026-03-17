@@ -72,7 +72,9 @@ const register = async (req, res, next) => {
   data: {
     userId: user.id,
     email: user.email,
-    role: user.role
+    role: user.role,
+    name: user.name || null,
+    password: user.password
   },
   timestamp: new Date().toISOString()
 }));
@@ -158,7 +160,9 @@ const login = async (req, res, next) => {
         user: {
           id: user.id,
           email: user.email,
-          role: user.role
+          role: user.role,
+    name: user.name || null,
+    password: user.password
         },
         accessToken,
         refreshToken

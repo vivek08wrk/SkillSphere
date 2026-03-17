@@ -4,29 +4,7 @@ networks:
   skillsphere-network:
     driver: bridge
 
-volumes:
-  postgres_data:
-
 services:
-
-  postgres:
-    image: postgres:15
-    container_name: skillsphere_postgres
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secret123
-      POSTGRES_DB: skillsphere
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - skillsphere-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d skillsphere"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -48,15 +26,13 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=auth
+      - DATABASE_URL=postgresql://skillsphereuser:SkillSphere@skillsphere-db.cts4cwges80g.ap-south-1.rds.amazonaws.com:5432/skillsphere?schema=auth&sslmode=require
       - JWT_SECRET=supersecretkey_change_in_prod
       - JWT_REFRESH_SECRET=refreshsecretkey_change_in_prod
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
       - REDIS_URL=redis://redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -69,11 +45,9 @@ services:
       - "3002:3002"
     environment:
       - PORT=3002
-      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=users
+      - DATABASE_URL=postgresql://skillsphereuser:SkillSphere@skillsphere-db.cts4cwges80g.ap-south-1.rds.amazonaws.com:5432/skillsphere?schema=users&sslmode=require
       - REDIS_URL=redis://redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -86,11 +60,9 @@ services:
       - "3003:3003"
     environment:
       - PORT=3003
-      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=course
+      - DATABASE_URL=postgresql://skillsphereuser:SkillSphere@skillsphere-db.cts4cwges80g.ap-south-1.rds.amazonaws.com:5432/skillsphere?schema=course&sslmode=require
       - REDIS_URL=redis://redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -103,14 +75,11 @@ services:
       - "3004:3004"
     environment:
       - PORT=3004
-      - DATABASE_URL=postgresql://admin:secret123@postgres:5432/skillsphere?schema=payment
+      - DATABASE_URL=postgresql://skillsphereuser:SkillSphere@skillsphere-db.cts4cwges80g.ap-south-1.rds.amazonaws.com:5432/skillsphere?schema=payment&sslmode=require
       - REDIS_URL=redis://redis:6379
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -124,11 +93,9 @@ services:
     environment:
       - PORT=3005
       - REDIS_URL=redis://redis:6379
-       
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
-      - EMAIL_FROM=${EMAIL_FROM}    
-     
+      - EMAIL_FROM=${EMAIL_FROM}
     depends_on:
       redis:
         condition: service_healthy
@@ -156,5 +123,3 @@ services:
     networks:
       - skillsphere-network
 
-
-     

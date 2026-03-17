@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const { connectRedis } = require('./redis');
+const { connectRedis } = require("./redis");
+const { subscribeToEvents } = require("./subscriber");
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use((err, req, res, next) => {
 // requests accept karo — warna cache kaam nahi karega
 const start = async () => {
   await connectRedis();
+  await subscribeToEvents();
   app.listen(PORT, () => {
     console.log(`👤 User Service running on port ${PORT}`);
   });
